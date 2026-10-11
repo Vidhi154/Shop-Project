@@ -136,11 +136,56 @@ app.get("/import-products", async (req, res) => {
 });
 app.get("/api/products", async (req, res) => {
   try {
-    console.log("Fetching products from MongoDB...");
+    const {
+      category,
+      search,
+      minPrice,
+      maxPrice,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+    } = req.query;
 
-    const products = await Product.find();
+    const filter = {};
 
-    console.log("Products found:", products.length);
+    if (search && search.trim()) {
+      filter.title = {
+        $regex: search.trim(),
+        $options: 'i',
+      };
+    }
+
+    if (category && category !== 'all') {
+      filter.category = category;
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      filter.price = {};
+
+      if (minPrice !== undefined && minPrice !== '') {
+        filter.price.$gte = Number(minPrice);
+      }
+
+      if (maxPrice !== undefined && maxPrice !== '') {
+        filter.price.$lte = Number(maxPrice);
+      }
+    }
+
+    let query = Product.find(filter);
+
+    if (sortBy === 'price' && sortOrder === 'asc') {
+      query = query.sort({ price: 1 });
+    } else if (sortBy === 'price' && sortOrder === 'desc') {
+      query = query.sort({ price: -1 });
+    }
+
+    const pageNumber = Number(page) || 1;
+    const pageSize = Number(limit) || 10;
+
+    const products = await query.skip((pageNumber - 1) * pageSize).limit(pageSize);
+
+    console.log('Fetching products from MongoDB...');
 
     res.json(products);
   } catch (error) {
@@ -149,6 +194,17 @@ app.get("/api/products", async (req, res) => {
     res.status(500).json({
       message: "Failed to fetch products",
       error: error.message
+    });
+  }
+});
+
+app.get("/api/categories", async (req, res) => {
+  try {
+    const categories = await Product.distinct("category");
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch categories"
     });
   }
 });
