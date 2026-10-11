@@ -1,7 +1,16 @@
 import React from 'react'
+import { Link } from "react-router-dom";
 
 export default function Card({ product }) {
   return (
+
+    <Link
+  to={`/products/${product._id}`}
+  style={{
+    textDecoration: "none",
+    color: "inherit"
+  }}
+>
     <div
       style={{
         background: '#fff',
@@ -51,5 +60,6 @@ export default function Card({ product }) {
         </button>
       </div>
     </div>
+    </Link>
   )
 }

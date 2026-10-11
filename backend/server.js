@@ -143,6 +143,7 @@ app.get("/api/products", async (req, res) => {
       maxPrice,
       sortBy,
       sortOrder,
+      sort,
       page,
       limit,
     } = req.query;
@@ -174,26 +175,48 @@ app.get("/api/products", async (req, res) => {
 
     let query = Product.find(filter);
 
-    if (sortBy === 'price' && sortOrder === 'asc') {
+    if (sort === 'price_asc' || (sortBy === 'price' && sortOrder === 'asc')) {
       query = query.sort({ price: 1 });
-    } else if (sortBy === 'price' && sortOrder === 'desc') {
+    } else if (sort === 'price_desc' || (sortBy === 'price' && sortOrder === 'desc')) {
       query = query.sort({ price: -1 });
     }
 
     const pageNumber = Number(page) || 1;
-    const pageSize = Number(limit) || 10;
-
+    const pageSize = Number(limit) || 8;
+    const total = await Product.countDocuments(filter);
     const products = await query.skip((pageNumber - 1) * pageSize).limit(pageSize);
 
     console.log('Fetching products from MongoDB...');
 
-    res.json(products);
+    res.json({
+      products,
+      total,
+      page: pageNumber,
+      totalPages: Math.ceil(total / pageSize) || 1,
+    });
   } catch (error) {
     console.error("Fetch error:", error);
 
     res.status(500).json({
       message: "Failed to fetch products",
       error: error.message
+    });
+  }
+});
+
+app.get("/api/products/:id" , async (req, res) =>{
+  try{
+    const val = await Product.findById(req.params.id)
+    if(!val){
+      return res.status(404).json({
+        message :" page not found"
+      });
+    }
+
+    res.json(val);
+  }catch(error){
+    res.status(400).json({
+      message: "Invalid product ID"
     });
   }
 });
