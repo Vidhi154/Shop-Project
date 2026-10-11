@@ -44,18 +44,65 @@ app.get("/", (req, res) => {
 //     });
 //   }
 // });
+// app.get("/import-products", async (req, res) => {
+
+//   try {
+
+//     // 1. Get products from public API
+//     const response = await fetch(
+//       "https://fakestoreapi.com/products"
+//     );
+
+//     const data = await response.json();
+
+//     // 2. Convert API data into OUR product format
+//     const products = data.map((product) => ({
+//       title: product.title,
+//       price: product.price,
+//       description: product.description,
+//       category: product.category,
+//       image: product.image,
+//       rating: product.rating.rate,
+//       stock: 20
+//     }));
+
+//     // 3. Save products into MongoDB
+//     await Product.deleteMany({});
+
+//     await Product.insertMany(products);
+
+//     // 4. Send response
+//     res.json({
+//       message: "Products imported successfully",
+//       count: products.length
+//     });
+
+//   } catch (error) {
+
+//     console.log(error);
+
+//     res.status(500).json({
+//       message: "Failed to import products"
+//     });
+
+//   }
+
+// });
+
 app.get("/import-products", async (req, res) => {
-
   try {
+    console.log("1. Import route called");
 
-    // 1. Get products from public API
     const response = await fetch(
       "https://fakestoreapi.com/products"
     );
 
+    console.log("2. Public API responded:", response.status);
+
     const data = await response.json();
 
-    // 2. Convert API data into OUR product format
+    console.log("3. Products received:", data.length);
+
     const products = data.map((product) => ({
       title: product.title,
       price: product.price,
@@ -63,30 +110,47 @@ app.get("/import-products", async (req, res) => {
       category: product.category,
       image: product.image,
       rating: product.rating.rate,
-      stock: 20
+      stock: 20,
     }));
 
-    // 3. Save products into MongoDB
+    console.log("4. Products transformed");
+
     await Product.deleteMany({});
+    console.log("5. Old products deleted");
 
     await Product.insertMany(products);
+    console.log("6. Products saved to MongoDB");
 
-    // 4. Send response
     res.json({
       message: "Products imported successfully",
-      count: products.length
+      count: products.length,
     });
-
   } catch (error) {
-
-    console.log(error);
+    console.error("Import error:", error);
 
     res.status(500).json({
-      message: "Failed to import products"
+      message: "Failed to import products",
+      error: error.message,
     });
-
   }
+});
+app.get("/api/products", async (req, res) => {
+  try {
+    console.log("Fetching products from MongoDB...");
 
+    const products = await Product.find();
+
+    console.log("Products found:", products.length);
+
+    res.json(products);
+  } catch (error) {
+    console.error("Fetch error:", error);
+
+    res.status(500).json({
+      message: "Failed to fetch products",
+      error: error.message
+    });
+  }
 });
 app.listen(5000, () => {
   console.log("Server running on port 5000");
